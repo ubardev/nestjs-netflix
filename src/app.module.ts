@@ -1,4 +1,9 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { MovieModule } from './movie/movie.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -18,7 +23,6 @@ import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthGuard } from './auth/guard/auth.guard';
 import { RBACGuard } from './auth/guard/rbac.guard';
 import { ResponseTimeInterceptor } from './common/interceptor/response-time.interceptor';
-import { ForbiddenExceptionFilter } from './common/filter/forbidden.filter';
 import { QueryFailedExceptionFilter } from './common/filter/query-failed.filter';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
@@ -49,27 +53,23 @@ import * as winston from 'winston';
     }),
     TypeOrmModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
-        type: configService.get<string>(envVariableKeys.dbType) as "postgres",
+        type: configService.get<string>(envVariableKeys.dbType) as 'postgres',
         host: configService.get<string>(envVariableKeys.dbHost),
         port: configService.get<number>(envVariableKeys.dbPort),
         username: configService.get<string>(envVariableKeys.dbUsername),
         password: configService.get<string>(envVariableKeys.dbPassword),
         database: configService.get<string>(envVariableKeys.dbDatabase),
-        entities: [
-          Movie,
-          MovieDetail,
-          MovieUserLike,
-          Director,
-          Genre,
-          User,
-        ],
+        entities: [Movie, MovieDetail, MovieUserLike, Director, Genre, User],
         synchronize: true,
+        ssl: {
+          rejectUnauthorized: false,
+        },
       }),
-      inject: [ConfigService]
+      inject: [ConfigService],
     }),
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'public'),
-      serveRoot: '/public/'
+      serveRoot: '/public/',
     }),
     CacheModule.register({
       ttl: 0,
@@ -85,7 +85,10 @@ import * as winston from 'winston';
               all: true,
             }),
             winston.format.timestamp(),
-            winston.format.printf(info => `${info.timestamp} [${info.context}] ${info.level} ${info.message}`)
+            winston.format.printf(
+              (info) =>
+                `${info.timestamp} [${info.context}] ${info.level} ${info.message}`,
+            ),
           ),
         }),
         new winston.transports.File({
@@ -96,16 +99,19 @@ import * as winston from 'winston';
             //   all: true,
             // }),
             winston.format.timestamp(),
-            winston.format.printf(info => `${info.timestamp} [${info.context}] ${info.level} ${info.message}`)
+            winston.format.printf(
+              (info) =>
+                `${info.timestamp} [${info.context}] ${info.level} ${info.message}`,
+            ),
           ),
-        })
+        }),
       ],
     }),
     MovieModule,
     DirectorModule,
     GenreModule,
     AuthModule,
-    UserModule
+    UserModule,
   ],
   providers: [
     {
@@ -131,20 +137,23 @@ import * as winston from 'winston';
     {
       provide: APP_INTERCEPTOR,
       useClass: ThrottleInterceptor,
-    }
-  ]
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(
-      BearerTokenMiddleware,
-    ).exclude({
-      path: 'auth/login',
-      method: RequestMethod.POST,
-    }, {
-      path: 'auth/register',
-      method: RequestMethod.POST,
-    })
-      .forRoutes('*')
+    consumer
+      .apply(BearerTokenMiddleware)
+      .exclude(
+        {
+          path: 'auth/login',
+          method: RequestMethod.POST,
+        },
+        {
+          path: 'auth/register',
+          method: RequestMethod.POST,
+        },
+      )
+      .forRoutes('*');
   }
 }
