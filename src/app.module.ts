@@ -60,10 +60,15 @@ import * as winston from 'winston';
         password: configService.get<string>(envVariableKeys.dbPassword),
         database: configService.get<string>(envVariableKeys.dbDatabase),
         entities: [Movie, MovieDetail, MovieUserLike, Director, Genre, User],
-        synchronize: true,
-        ssl: {
-          rejectUnauthorized: false,
-        },
+        synchronize:
+          configService.get<string>(envVariableKeys.env) === 'prod'
+            ? false
+            : true,
+        ...(configService.get<string>(envVariableKeys.env) === 'prod' && {
+          ssl: {
+            rejectUnauthorized: false,
+          },
+        }),
       }),
       inject: [ConfigService],
     }),
